@@ -115,6 +115,16 @@ class TestPhoneNumberFileSearch(unittest.TestCase):
             with self.assertRaises(ValueError):
                 find_phone_numbers_in_file(file_path)
 
+    def test_file_with_invalid_encoding(self):
+        """Обработка файла с неподходящей кодировкой"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = Path(temp_dir) / 'invalid.txt'
+            file_path.write_bytes(b'\xff\xfe')
+
+            with self.assertRaises(ValueError):
+                find_phone_numbers_in_file(file_path)
+
+
 class TestPhonePageSearch(unittest.TestCase):
     """Тесты для поиска номеров с веб-страниц"""
 
@@ -167,6 +177,19 @@ class TestPhonePageSearch(unittest.TestCase):
             find_phone_numbers_on_webpage(
                 'https://example.com'
             )
+
+    @patch('phone_number_finder.requests.get')
+    def test_webpage_http_error(self, mock_get):
+        """Обработка HTTP-ошибки при загрузке веб-страницы"""
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            'Ошибка HTTP'
+        )
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            find_phone_numbers_on_webpage('https://example.com')
+
 
 if __name__ == '__main__':
     unittest.main()
